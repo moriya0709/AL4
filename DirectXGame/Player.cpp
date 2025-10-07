@@ -85,14 +85,14 @@ void Player::Draw() {
 
 void Player::InputMove() {
 
-	if (onGround_) {
+	
 
 		// 左右移動操作
-		if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A)) {
+		if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A) || state.Gamepad.sThumbLX) {
 
 			// 左右加速
 			Vector3 acceleration = {};
-			if (Input::GetInstance()->PushKey(DIK_D)) {
+			if (Input::GetInstance()->PushKey(DIK_D) || state.Gamepad.sThumbLX > DEAD_ZONE) {
 
 				if (velocity_.x < 0.0f) {
 					// 旋回の最初は移動減衰をかける
@@ -104,7 +104,7 @@ void Player::InputMove() {
 					turnFirstRotationY_ = worldTransform_.rotation_.y;
 					turnTimer_ = kTimeTurn;
 				}
-			} else if (Input::GetInstance()->PushKey(DIK_A)) {
+			} else if (Input::GetInstance()->PushKey(DIK_A) || state.Gamepad.sThumbLX < -DEAD_ZONE) {
 				if (velocity_.x > 0.0f) {
 					// 旋回の最初は移動減衰をかける
 					velocity_.x *= (1.0f - kAttenuation);
@@ -127,8 +127,9 @@ void Player::InputMove() {
 		if (std::abs(velocity_.x) <= 0.0001f) {
 			velocity_.x = 0.0f;
 		}
-
-		if (Input::GetInstance()->PushKey(DIK_W)) {
+	    
+	if (onGround_) {
+		if (Input::GetInstance()->TriggerKey(DIK_W) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
 			// ジャンプ初速
 			velocity_ += Vector3(0, kJumpAcceleration / 60.0f, 0);
 		}
@@ -417,6 +418,7 @@ void Player::CheckMapCollisionRight(CollisionMapInfo& info) {
 			info.move.x = std::max(0.0f, rect.left - worldTransform_.translation_.x - (kWidth / 2.0f + kBlank));
 			info.hitWall = true;
 		}
+
 	}
 }
 
@@ -490,6 +492,13 @@ void Player::BehaviorRootInitialize() {}
 
 // 通常行動更新
 void Player::BehaviorRootUpdate() {
+	
+	// 現在のジョイスティックを取得
+	Input::GetInstance()->GetJoystickState(0, state);
+
+	// 前回のジョイスティックを取得
+	Input::GetInstance()->GetJoystickStatePrevious(0, preState);
+
 	// 移動入力
 	InputMove();
 

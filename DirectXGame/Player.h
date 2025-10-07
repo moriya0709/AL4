@@ -97,7 +97,7 @@ private:
 	// 加速度
 	static inline const float kAcceleration = 0.2f;
 	// 減速度
-	static inline const float kAttenuation = 0.1f;
+	static inline const float kAttenuation = 0.15f;
 	// 最大速度制限
 	static inline const float kLimitRunSpeed = 0.2f;
 	// 旋回開始時の角度
@@ -143,6 +143,12 @@ private:
 	static inline const uint32_t kActionTime = 5;
 	// 02_14 26枚目 余韻動作の時間
 	static inline const uint32_t kRecoveryTime = 12;
+
+	// ジョイスティック
+	XINPUT_STATE state,preState;
+
+	int DEAD_ZONE = 8000;
+
 
 	// マップとの当たり判定情報
 	struct CollisionMapInfo {
