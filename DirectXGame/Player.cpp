@@ -28,6 +28,9 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 
 	// デスフラグの初期化
 	isDead_ = false;
+
+	// ジャンプカウント
+	jumpCount = 0;
 }
 
 void Player::Update() {
@@ -137,6 +140,15 @@ void Player::InputMove() {
 		// 落下速度
 		velocity_ += Vector3(0, -kGravityAcceleration / 60.0f, 0);
 		velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
+
+		if (jumpCount == 1) {
+			if (Input::GetInstance()->TriggerKey(DIK_W) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+				// ジャンプ初速
+				velocity_.y = 0.0f;
+				velocity_ += Vector3(0, kJumpAcceleration / 60.0f, 0);
+				jumpCount++;
+			}
+		}
 	}
 }
 
@@ -264,9 +276,10 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 	info;
 
 	if (onGround_) {
-		// 02_08スライド18枚目 ジャンプ開始
+		// ジャンプ開始
 		if (velocity_.y > 0.0f) {
 			onGround_ = false;
+			jumpCount++;
 		} else {
 			// 落下判定
 			// 落下なら空中状態に切り替え
@@ -299,8 +312,9 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 
 			// 落下開始
 			if (!hit) {
-				//				DebugText::GetInstance()->ConsolePrintf("jump");
+				//DebugText::GetInstance()->ConsolePrintf("jump");
 				onGround_ = false;
+				jumpCount++;
 			}
 		}
 	} else {
@@ -312,6 +326,9 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 			velocity_.x *= (1.0f - kAttenuationLanding);
 			// Y速度をゼロに
 			velocity_.y = 0.0f;
+
+			// ジャンプカウントリセット
+			jumpCount = 0;
 		}
 	}
 }

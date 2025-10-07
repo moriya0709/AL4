@@ -146,8 +146,10 @@ private:
 
 	// ジョイスティック
 	XINPUT_STATE state,preState;
-
 	int DEAD_ZONE = 8000;
+
+	// 二段ジャンプ
+	uint32_t jumpCount;
 
 
 	// マップとの当たり判定情報
