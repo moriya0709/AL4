@@ -20,14 +20,18 @@ void CameraController::Updata() {
 	// 追従対象とオフセットと追従対象の速度カメラの目標座標を計算
 	destination_ = targetWorldTransform.translation_ + targetOffset_ + targetVelocity * kVelocityBias;
 
+	// カメラ慣性なし
+	camera_->translation_ = targetWorldTransform.translation_ + targetOffset_;
+
+	// カメラ慣性あり
 	// 座標補間によりゆったり追従(数学関数追加)
-	camera_->translation_ = LerpV(camera_->translation_, destination_, kInterpolationRate);
+	//camera_->translation_ = LerpV(camera_->translation_, destination_, kInterpolationRate);
 
 	// 追従対象が画面外に出ないように補正
-	camera_->translation_.x = max(camera_->translation_.x, destination_.x + targetMargin.left);
-	camera_->translation_.x = min(camera_->translation_.x, destination_.x + targetMargin.right);
-	camera_->translation_.y = max(camera_->translation_.y, destination_.y + targetMargin.bottom);
-	camera_->translation_.y = min(camera_->translation_.y, destination_.y + targetMargin.top);
+	//camera_->translation_.x = max(camera_->translation_.x, destination_.x + targetMargin.left);
+	//camera_->translation_.x = min(camera_->translation_.x, destination_.x + targetMargin.right);
+	//camera_->translation_.y = max(camera_->translation_.y, destination_.y + targetMargin.bottom);
+	//camera_->translation_.y = min(camera_->translation_.y, destination_.y + targetMargin.top);
 
 	// 移動範囲制限
 	camera_->translation_.x = max(camera_->translation_.x, movableArea_.left);

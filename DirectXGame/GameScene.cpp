@@ -46,7 +46,7 @@ void GameScene::Initialize() {
 	cameraController_->SetTarget(player_);      // 追従対象セット
 	cameraController_->Reset();                 // リセット
 
-	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f};
+	CameraController::Rect cameraArea = {5.0f, 100 - 5.0f, 4.0f, 4.0f};
 	cameraController_->SetMovableArea(cameraArea);
 
 	// 敵の初期化
