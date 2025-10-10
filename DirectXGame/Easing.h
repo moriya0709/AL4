@@ -1,7 +1,6 @@
 #pragma once
 #define _USE_MATH_DEFINES
 
-#include "ImGui.h"
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -14,15 +13,13 @@
 using namespace KamataEngine;
 
 struct UiSet {
-	Vector3 pos;
-	Vector3 size;
+	WorldTransform worldTransform;
 	Vector3 startPos;
 	Vector3 endPos;
 	Vector3 startSize;
 	Vector3 endSize;
-	float rotation;
-	float startRotation;
-	float endRotation;
+	Vector3 startRotation;
+	Vector3 endRotation;
 	float moveTime;
 	float sizeTime;
 	float rotationTime;

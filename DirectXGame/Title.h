@@ -1,6 +1,7 @@
 #pragma once
 #include "KamataEngine.h"
 #include "Math.h"
+#include "Easing.h"
 
 using namespace KamataEngine;
 
@@ -11,7 +12,10 @@ public:
 	void Draw();
 
 private:
-	WorldTransform worldTransform_;
 	Model* modelTitle_ = nullptr;
 	Camera* camera_ = nullptr;
+
+	UiSet logoUi_;
+
+	Easing* easing_;
 };

@@ -144,7 +144,6 @@ void Easing::Draw() {
 
 	//* UI *//
 
-	ImGui::End();
 }
 
 void Easing::Move(UiSet& ui, float timeSpeed, int num) {
@@ -158,7 +157,7 @@ void Easing::Move(UiSet& ui, float timeSpeed, int num) {
 
 	ui.moveEasedT = BezierEasing(ui.moveTime, easeP[num][0], easeP[num][1], easeP[num][2], easeP[num][3]);
 
-	ui.pos = LerpV(ui.startPos, ui.endPos, ui.moveEasedT);
+	ui.worldTransform.translation_ = LerpV(ui.startPos, ui.endPos, ui.moveEasedT);
 }
 
 void Easing::Size(UiSet& ui, float timeSpeed, int num) {
@@ -172,7 +171,7 @@ void Easing::Size(UiSet& ui, float timeSpeed, int num) {
 
 	ui.sizeEasedT = BezierEasing(ui.sizeTime, easeP[num][0], easeP[num][1], easeP[num][2], easeP[num][3]);
 
-	ui.size = LerpV(ui.startSize, ui.endSize, ui.sizeEasedT);
+	ui.worldTransform.scale_ = LerpV(ui.startSize, ui.endSize, ui.sizeEasedT);
 }
 
 void Easing::Rotation(UiSet& ui, float timeSpeed, int num) {
@@ -186,7 +185,7 @@ void Easing::Rotation(UiSet& ui, float timeSpeed, int num) {
 
 	ui.rotationEasedT = BezierEasing(ui.rotationTime, easeP[num][0], easeP[num][1], easeP[num][2], easeP[num][3]);
 
-	ui.rotation = LerpF(ui.startRotation, ui.endRotation, ui.rotationEasedT);
+	ui.worldTransform.rotation_ = LerpV(ui.startRotation, ui.endRotation, ui.rotationEasedT);
 }
 
 Vector2 Easing::Lerp(const Vector2& p0, const Vector2& p1, float t) {
