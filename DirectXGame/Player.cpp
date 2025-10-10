@@ -561,6 +561,7 @@ void Player::BehaviorRootUpdate() {
 		isAttack_ = true;
 	}
 
+	// 落下判定
 	if (worldTransform_.translation_.y < -10.0f) {
 		isDead_ = true;
 	}

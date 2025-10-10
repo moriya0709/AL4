@@ -10,7 +10,7 @@ public:
 	void Update();
 	void Draw();
 
-	private:
+private:
 	WorldTransform worldTransform_;
 	Model* modelTitle_ = nullptr;
 	Camera* camera_ = nullptr;
