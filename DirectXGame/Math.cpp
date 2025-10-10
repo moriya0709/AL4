@@ -20,7 +20,7 @@ const Vector3 operator+(const Vector3& v1, const Vector3& v2) {
 }
 
 // 02_06のスライド24枚目のLerp関数
-Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t) { return Vector3(Lerp(v1.x, v2.x, t), Lerp(v1.y, v2.y, t), Lerp(v1.z, v2.z, t)); }
+Vector3 LerpV(const Vector3& v1, const Vector3& v2, float t) { return Vector3(LerpF(v1.x, v2.x, t), LerpF(v1.y, v2.y, t), LerpF(v1.z, v2.z, t)); }
 
 Vector3& operator+=(Vector3& lhv, const Vector3& rhv) {
 	lhv.x += rhv.x;
@@ -151,24 +151,24 @@ void WorldTransformUpdate(WorldTransform& worldTransform) {
 	worldTransform.TransferMatrix();
 }
 
-float Lerp(float x1, float x2, float t) { return (1.0f - t) * x1 + t * x2; }
+float LerpF(float x1, float x2, float t) { return (1.0f - t) * x1 + t * x2; }
 
 float EaseIn(float x1, float x2, float t) {
 	float easedT = t * t;
 
-	return Lerp(x1, x2, easedT);
+	return LerpF(x1, x2, easedT);
 }
 
 float EaseOut(float x1, float x2, float t) {
 	float easedT = 1.0f - std::powf(1.0f - t, 3.0f);
 
-	return Lerp(x1, x2, easedT);
+	return LerpF(x1, x2, easedT);
 }
 
 float EaseInOut(float x1, float x2, float t) {
 	float easedT = -(std::cosf(std::numbers::pi_v<float> * t) - 1.0f) / 2.0f;
 
-	return Lerp(x1, x2, easedT);
+	return LerpF(x1, x2, easedT);
 }
 
 bool IsCollision(const AABB& aabb1, const AABB& aabb2) {

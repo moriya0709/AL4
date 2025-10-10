@@ -99,6 +99,7 @@ void GameScene::Initialize() {
 }
 
 void GameScene::Update() {
+
 	// フェーズの切り替え
 	ChangePhase();
 

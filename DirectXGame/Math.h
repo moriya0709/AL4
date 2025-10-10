@@ -45,7 +45,7 @@ Vector3 operator-(const Vector3& v);
 const Vector3 operator+(const Vector3& lhv, const Vector3& rhv);
 
 // 02_06のスライド24枚目のLerp関数
-Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t);
+Vector3 LerpV(const Vector3& v1, const Vector3& v2, float t);
 
 // 02_06 スライド29枚目で追加
 const Vector3 operator*(const Vector3& v1, const float f);
@@ -81,7 +81,7 @@ Matrix4x4 operator*(const Matrix4x4& m1, const Matrix4x4& m2);
 // ワールドトランスフォーム更新(02_03の最後)
 void WorldTransformUpdate(WorldTransform& worldTransform);
 
-float Lerp(float x1, float x2, float t);
+float LerpF(float x1, float x2, float t);
 
 float EaseIn(float x1, float x2, float t);
 

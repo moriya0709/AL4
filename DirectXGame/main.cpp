@@ -106,6 +106,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// DirectXCommonインスタンスの取得
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
+	// ImGuiManagerインスタンスの取得
+	ImGuiManager* imguiManager = ImGuiManager::GetInstance();
+
 	// タイトルシーンのインスタンス生成
 	titleScene = new TitleScene();
 	// ゲームシーン初期化
@@ -128,16 +131,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			break;
 		}
 
+		// ImGui受付開始
+		imguiManager->Begin();
+
 		// シーン切り替え
 		ChageScene();
 		// 現在シーン更新
 		UpdateScene();
+
+		// ImGui受付終了
+		imguiManager->End();
 
 		// 描画開始
 		dxCommon->PreDraw();
 
 		// 現在シーンの描画
 		DrawScene();
+
+		// ImGuiの描画
+		imguiManager->Draw();
 
 		// 描画終了
 		dxCommon->PostDraw();
