@@ -111,6 +111,7 @@ void GameScene::Update() {
 		// デス演出フェーズの処理
 		if (deathParticles_ && deathParticles_->IsFinished()) {
 		}
+
 		break;
 	}
 
@@ -223,6 +224,12 @@ void GameScene::Update() {
 			WorldTransformUpdate(*worldTransformBlock);
 		}
 	}
+
+	// シェイク
+	if (player_->IsDead()) {
+		cameraController_->Shake();
+	}
+
 
 	// デバックカメラの更新
 	debugCamera_->Update();
@@ -381,15 +388,23 @@ void GameScene::ChangePhase() {
 		break;
 	case Phase::kFadeOut:
 		fade_->Update();
+
+		if (fade_->IsFinished()) {
+			if (!player_->IsDead()) {
+				finished_ = true;
+			}
+		}
+
 		// フェードアウトフェーズの処理
 		if (player_->IsDead()) {
-			phase_ = Phase::kPlay;
-			player_->isDead_ = false;
-			player_->Initialize(playerModel_, &camera_, mapChipField_->GetMapChipPositionByIndex(3, 17));
-			break;
-		}
-		if (fade_->IsFinished()) {
-			finished_ = true;
+
+
+			if (!cameraController_->IsShake()) {
+				phase_ = Phase::kPlay;
+				player_->isDead_ = false;
+				player_->Initialize(playerModel_, &camera_, mapChipField_->GetMapChipPositionByIndex(3, 17));
+				cameraController_->Initialize(&camera_);
+			}	
 		}
 		break;
 	}
