@@ -6,6 +6,12 @@
 void CameraController::Initialize(Camera* camera) {
 	// カメラの初期化
 	camera_ = camera;
+
+	// シェイク初期化
+	isShake = true;
+	shakeTimer = 10;  // 揺れ時間30フレーム
+	amplitude = 2.0f; // 揺れの大きさ初期値
+
 }
 
 void CameraController::Updata() {
@@ -45,4 +51,27 @@ void CameraController::Reset() {
 	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 	// 追従対象とオフセットからカメラの座標を計算
 	camera_->translation_ = targetWorldTransform.translation_ + targetOffset_;
+}
+
+void CameraController::Shake() {
+	// --- シェイク ---
+	Vector3 shakeOffset = {0.0f, 0.0f, 0.0f};
+
+	if (isShake) {
+		shakeTimer--;
+		amplitude *= decay;
+
+		// ランダムオフセット
+		shakeOffset.x = ((rand() % 200 - 100) / 100.0f) * amplitude;
+		shakeOffset.y = ((rand() % 200 - 100) / 100.0f) * amplitude;
+
+		if (shakeTimer <= 0) {
+			isShake = false;
+		}
+	}
+
+	// シェイクを追従カメラに加算
+	camera_->translation_ += shakeOffset;
+
+	camera_->UpdateMatrix();
 }

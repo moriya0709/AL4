@@ -14,6 +14,9 @@ public:
 		float top = 1.0f;
 	};
 
+	// シェイク中フラグ
+	bool isShake;
+
 	// 初期化
 	void Initialize(Camera* camera);
 	// 更新
@@ -24,6 +27,11 @@ public:
 	void Reset();
 	// カメラ移動範囲
 	void SetMovableArea(Rect area) { movableArea_ = area; }
+
+	// シェイク
+	void Shake();
+
+	bool IsShake() const { return isShake; }
 
 private:
 	// カメラ
@@ -42,4 +50,11 @@ private:
 	static inline const float kVelocityBias = 30.0f;
 	// 追従対象の書く方向へのカメラ移動範囲
 	static inline const Rect targetMargin = {-9.0f, 9.0f, -5.0f, 5.0f};
+
+	// シェイク
+	float amplitude; // 揺れの大きさ
+	float decay = 0.9f; // 揺れの減衰率
+	uint32_t shakeTimer; // 揺れ時間
+
+
 };
