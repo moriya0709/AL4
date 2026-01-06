@@ -100,6 +100,11 @@ void GameScene::Initialize() {
 	atk_ = new Atk();
 	atk_->Initialize(&camera_);
 
+	// 説明
+	explanationPos = {700.0f,200.0f};
+	explanationTex = TextureManager::Load("explanation.png");
+	explanation = Sprite::Create(explanationTex, explanationPos);
+
 }
 
 void GameScene::Update() {
@@ -309,6 +314,9 @@ void GameScene::Draw() {
 
 	// スプライト描画前処理
 	Sprite::PreDraw(dxCommon->GetCommandList());
+
+	// 説明
+	explanation->Draw();
 
 	// スプライト描画後処理
 	Sprite::PostDraw();

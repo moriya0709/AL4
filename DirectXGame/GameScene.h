@@ -108,4 +108,9 @@ private:
 	// 攻撃
 	Atk* atk_ = nullptr;
 
+	// 説明
+	Sprite* explanation;
+	int explanationTex;
+	Vector2 explanationPos;
+
 };
