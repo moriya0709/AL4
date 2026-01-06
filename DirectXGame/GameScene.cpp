@@ -9,7 +9,7 @@ void GameScene::Initialize() {
 	player_ = new Player();
 
 	// 3Dモデルの生成
-	playerModel_ = Model::CreateFromOBJ("player");
+	playerModel_ = Model::CreateFromOBJ("player_head");
 	blockModel_ = Model::CreateFromOBJ("block");
 	skydomeModel_ = Model::CreateFromOBJ("skydome", true);
 	enemyModel_ = Model::CreateFromOBJ("enemy");
@@ -50,7 +50,7 @@ void GameScene::Initialize() {
 	cameraController_->SetMovableArea(cameraArea);
 
 	// 敵の初期化
-	for (int32_t i = 0; i < 0; ++i) {
+	for (int32_t i = 0; i < 5; ++i) {
 		Enemy* newEnemy = new Enemy();
 		Vector3 enemyPosition = mapChipField_->GetMapChipPositionByIndex(i * 10, 18);
 		newEnemy->Initialize(enemyModel_, &camera_, enemyPosition, this);
@@ -96,6 +96,10 @@ void GameScene::Initialize() {
 	Vector3 backGroundPosition = {50.0f, -20.0f, 50.0f};
 	backGround_->Initialize(backGroundModel_, &camera_, backGroundPosition);
 
+	// 攻撃
+	atk_ = new Atk();
+	atk_->Initialize(&camera_);
+
 }
 
 void GameScene::Update() {
@@ -117,6 +121,9 @@ void GameScene::Update() {
 
 	// 自キャラの更新
 	player_->Update();
+	// 攻撃の更新
+	atk_->Update(player_);
+
 	// 背景の更新
 	skydome_->Update();
 	backGround_->Update();
@@ -156,9 +163,9 @@ void GameScene::Update() {
 	}
 
 	// 発射処理
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE) && bulletCoolTime_ <= 0) {
-		isBullet_ = true;
-	}
+	//if (Input::GetInstance()->TriggerKey(DIK_SPACE) && bulletCoolTime_ <= 0) {
+	//	isBullet_ = true;
+	//}
 
 	if (isBullet_) {
 		// 予備動作時間
@@ -184,6 +191,8 @@ void GameScene::Update() {
 			isBullet_ = false;
 		}
 	}
+	
+
 
 	// 動くブロックの更新
 	for (MoveBlock* moveBlock : moveBlocks_) {
@@ -292,6 +301,9 @@ void GameScene::Draw() {
 		player_->Draw();
 	}
 
+	// 攻撃の描画
+	atk_->Draw();
+
 	// 3Dモデル描画後処理
 	Model::PostDraw();
 
@@ -382,6 +394,7 @@ void GameScene::ChangePhase() {
 
 			const Vector3& deathParticlesPosition = player_->GetWorldPosition();
 
+
 			deathParticles_ = new DeathParticles;
 			deathParticles_->Initialize(deathParticlesModel_, &camera_, deathParticlesPosition);
 		}
@@ -456,8 +469,10 @@ void GameScene::CheckAllCollisions() {
 		// AABB同士の交差判定
 		if (IsCollision(aabb1, aabb2)) {
 			if (player_->behavior_ == Player::Behavior::kRoot) {
-				// 自キャラの衝突時コールバックを呼び出す
-				player_->OnCollision(enemy);
+				if (enemy->behavior_ != Enemy::Behavior::kDead) {
+					// 自キャラの衝突時コールバックを呼び出す
+					player_->OnCollision(enemy);
+				}
 			} else if (player_->behavior_ == Player::Behavior::kAttack) {
 				// 敵弾の衝突時コールバックを呼び出す
 				enemy->OnCollision(player_);
@@ -475,6 +490,30 @@ void GameScene::CheckAllCollisions() {
 			if (player_->behavior_ == Player::Behavior::kRoot) {
 				// 自キャラの衝突時コールバックを呼び出す
 				player_->OnCollision(bullet);
+			}
+		}
+	}
+
+	// 攻撃と敵の当たり判定
+	if (player_->behavior_ == Player::Behavior::kAttack) {
+		// 当たり判定の範囲を変更
+		if (player_->attackTypes_ == Player::Normal) {
+			aabb1 = atk_->GetAABB_Normal();
+		} else {
+			aabb1 = atk_->GetAABB_Air();
+		}
+
+		for (Enemy* enemy : enemyes_) {
+			if (enemy->IsCollisionDisabled())
+				continue; // コリジョン無効の敵はスキップ
+
+			// 敵の座標
+			aabb2 = enemy->GetAABB();
+
+			// AABB同士の交差判定
+			if (IsCollision(aabb1, aabb2)) {
+				// 敵の衝突時コールバックを呼び出す
+				enemy->OnCollision(atk_);
 			}
 		}
 	}

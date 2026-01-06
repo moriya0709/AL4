@@ -42,6 +42,28 @@ void Enemy::OnCollision(const Player* player)
 	
 }
 
+void Enemy::OnCollision(const Atk* atk) { 
+	(void)atk;
+
+	if (!isInvincible) {
+		if (behavior_ == Behavior::kDead) {
+			// 敵がやられているなら何もしない
+			return;
+		} else {
+			// 敵の振る舞いをデス演出に変更
+			if (hp_ > 1) {
+				hp_--;
+			} else if (hp_ <= 1) {
+				behaviorRequest_ = Behavior::kDead;
+			}
+		}
+	}
+
+	invincibleTime = 10; // 無敵時間を設定
+	isInvincible = true;
+
+}
+
 void Enemy::Update() {
 	behavior_ = behaviorRequest_;
 
@@ -54,6 +76,13 @@ void Enemy::Update() {
 		BehaviorDeadUpdate();
 		break;
 	}
+
+	if (isInvincible) {
+		invincibleTime--;
+		if (invincibleTime <= 0) {
+			isInvincible = false;
+		}
+	}	
 
 	// ワールド行列更新
 	WorldTransformUpdate(worldTransform_);

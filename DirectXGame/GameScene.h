@@ -12,6 +12,7 @@
 #include "Goal.h"
 #include "Fade.h"
 #include "BackGround.h"
+#include "Atk.h"
 
 using namespace KamataEngine;
 // ゲームシーン
@@ -104,4 +105,7 @@ private:
 
 	// 背景
 	BackGround* backGround_ = nullptr;
+	// 攻撃
+	Atk* atk_ = nullptr;
+
 };

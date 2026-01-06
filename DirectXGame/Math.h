@@ -92,3 +92,10 @@ float EaseInOut(float x1, float x2, float t);
 bool IsCollision(const AABB& aabb1, const AABB& aabb2);
 
 Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix);
+Vector4 Transform(const Vector4& v, const Matrix4x4& m);
+
+Vector3 Normalize(const Vector3& v);
+
+// 逆行列
+Matrix4x4 Inverse(const Matrix4x4& m);
+

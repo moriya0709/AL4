@@ -1,22 +1,29 @@
 #pragma once
 #define _USE_MATH_DEFINES
 
+#include <assert.h>
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
-#include "Math.h"
 #include "KamataEngine.h"
+#include "Math.h"
 
 using namespace KamataEngine;
 
-struct UiSet {
+struct EasingSet {
 	WorldTransform worldTransform;
+	Vector2 pos;
+	Vector2 size;
+	Vector2 startPosV2;
 	Vector3 startPos;
+	Vector2 endPosV2;
 	Vector3 endPos;
+	Vector2 startSizeV2;
 	Vector3 startSize;
+	Vector2 endSizeV2;
 	Vector3 endSize;
 	Vector3 startRotation;
 	Vector3 endRotation;
@@ -41,16 +48,19 @@ public:
 	void Draw();
 
 	// 移動
-	void Move(UiSet& ui, float timeSpeed, int num);
+	void Move(EasingSet& ui, float timeSpeed, int num);
+	void MoveV2(EasingSet& ui, float timeSpeed, int num);
 	// サイズ
-	void Size(UiSet& ui, float timeSpeed, int num);
+	void Size(EasingSet& ui, float timeSpeed, int num);
+	void SizeV2(EasingSet& ui, float timeSpeed, int num);
 	// 回転
-	void Rotation(UiSet& ui, float timeSpeed, int num);
+	void Rotation(EasingSet& ui, float timeSpeed, int num);
 
 private:
 	// 制御点の数
 	int kNumControlPoints = 4;
 
+#ifdef _DEBUG
 	// 制御点
 	std::vector<ImVec2> kControlPoints = {
 	    {50,  50 }, // スタート
@@ -58,6 +68,7 @@ private:
 	    {150, 150}, // ハンドル2
 	    {200, 200}, // エンド
 	};
+#endif
 
 	// イージング用コントロールポイント
 	Vector2 easeP[10][4] = {
@@ -82,6 +93,7 @@ private:
 	// ファイル名
 	char fileName[20] = "";
 
+#ifdef _DEBUG
 	// --- ImGui ---
 	// 現在のウィンドウのDrawListを取得
 	ImDrawList* draw_list;
@@ -91,6 +103,7 @@ private:
 	ImVec2 controlPosB;
 	ImVec2 controlPosC;
 	ImVec2 controlPosD;
+#endif
 
 	// 線形補間
 	Vector2 Lerp(const Vector2& p0, const Vector2& p1, float t);

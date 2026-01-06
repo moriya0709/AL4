@@ -34,7 +34,5 @@ private:
 	// 終了フラグ
 	bool finished_ = false;
 
-	Fade* fade_ = nullptr;
-	// 現在のフェーズ
-	Phase phase_ = Phase::kFadeIn;
+
 };

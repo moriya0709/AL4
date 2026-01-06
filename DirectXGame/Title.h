@@ -15,7 +15,7 @@ private:
 	Model* modelTitle_ = nullptr;
 	Camera* camera_ = nullptr;
 
-	UiSet logoUi_;
+	EasingSet logoUi_;
 
 	Easing* easing_;
 };

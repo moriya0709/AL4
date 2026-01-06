@@ -151,6 +151,7 @@ void WorldTransformUpdate(WorldTransform& worldTransform) {
 	worldTransform.TransferMatrix();
 }
 
+
 float LerpF(float x1, float x2, float t) { return (1.0f - t) * x1 + t * x2; }
 
 float EaseIn(float x1, float x2, float t) {
@@ -190,3 +191,60 @@ Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
 	result.z /= w;
 	return result;
 }
+Vector4 Transform(const Vector4& v, const Matrix4x4& m) {
+
+	Vector4 result{};
+
+	result.x = v.x * m.m[0][0] + v.y * m.m[1][0] + v.z * m.m[2][0] + v.w * m.m[3][0];
+	result.y = v.x * m.m[0][1] + v.y * m.m[1][1] + v.z * m.m[2][1] + v.w * m.m[3][1];
+	result.z = v.x * m.m[0][2] + v.y * m.m[1][2] + v.z * m.m[2][2] + v.w * m.m[3][2];
+	result.w = v.x * m.m[0][3] + v.y * m.m[1][3] + v.z * m.m[2][3] + v.w * m.m[3][3];
+
+	return result;
+}
+
+Vector3 Normalize(const Vector3& v) {
+
+	float length = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+
+	if (length == 0.0f) {
+		return {0.0f, 0.0f, 0.0f}; // ゼロ除算対策
+	}
+
+	return {v.x / length, v.y / length, v.z / length};
+}
+
+// 逆行列
+Matrix4x4 Inverse(const Matrix4x4& m)
+{
+	Matrix4x4 result = {};
+
+	// 上3x3部分（回転・拡大縮小）の逆行列
+	float det =
+		m.m[0][0] * (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]) -
+		m.m[0][1] * (m.m[1][0] * m.m[2][2] - m.m[1][2] * m.m[2][0]) +
+		m.m[0][2] * (m.m[1][0] * m.m[2][1] - m.m[1][1] * m.m[2][0]);
+	float invDet = 1.0f / det;
+
+	// 3x3部分の逆行列（クラメルの公式）
+	result.m[0][0] = (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]) * invDet;
+	result.m[0][1] = -(m.m[0][1] * m.m[2][2] - m.m[0][2] * m.m[2][1]) * invDet;
+	result.m[0][2] = (m.m[0][1] * m.m[1][2] - m.m[0][2] * m.m[1][1]) * invDet;
+
+	result.m[1][0] = -(m.m[1][0] * m.m[2][2] - m.m[1][2] * m.m[2][0]) * invDet;
+	result.m[1][1] = (m.m[0][0] * m.m[2][2] - m.m[0][2] * m.m[2][0]) * invDet;
+	result.m[1][2] = -(m.m[0][0] * m.m[1][2] - m.m[0][2] * m.m[1][0]) * invDet;
+
+	result.m[2][0] = (m.m[1][0] * m.m[2][1] - m.m[1][1] * m.m[2][0]) * invDet;
+	result.m[2][1] = -(m.m[0][0] * m.m[2][1] - m.m[0][1] * m.m[2][0]) * invDet;
+	result.m[2][2] = (m.m[0][0] * m.m[1][1] - m.m[0][1] * m.m[1][0]) * invDet;
+
+	// 平行移動部分の逆変換
+	result.m[3][0] = -(result.m[0][0] * m.m[3][0] + result.m[1][0] * m.m[3][1] + result.m[2][0] * m.m[3][2]);
+	result.m[3][1] = -(result.m[0][1] * m.m[3][0] + result.m[1][1] * m.m[3][1] + result.m[2][1] * m.m[3][2]);
+	result.m[3][2] = -(result.m[0][2] * m.m[3][0] + result.m[1][2] * m.m[3][1] + result.m[2][2] * m.m[3][2]);
+	result.m[3][3] = 1.0f;
+
+	return result;
+}
+

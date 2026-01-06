@@ -1,7 +1,9 @@
+#include "KamataEngine.h"
 #include "TitleScene.h"
 #include "GameScene.h"
 #include "ClearScene.h"
-#include "KamataEngine.h"
+#include "Transition.h"
+
 
 using namespace KamataEngine;
 
@@ -17,53 +19,79 @@ Scene scene = Scene::kTitle;
 
 // タイトルシーンのインスタンス生成
 TitleScene* titleScene = nullptr;
-
 // ゲームシーンのインスタンス生成
 GameScene* gameScene = nullptr;
-
 // クリアシーンのインスタンス生成
 ClearScene* clearScene = nullptr;
+// トランジション
+Transition* transition = nullptr;
 
-void ChageScene()
+// シーン切り換えまでの時間
+int changeTime = 0;
+
+void ChangeScene()
 {
-	switch (scene)
-	{ 
-	case Scene::kTitle:
-		if (titleScene->IsFinished()) {
-			// シーン変更
-			scene = Scene::kGame;
-			// 旧シーンの解放
-			delete titleScene;
-			titleScene = nullptr;
-			// 新シーンの生成と初期化
-			gameScene = new GameScene;
-			gameScene->Initialize();	
-		}
-		break;
-	case Scene::kGame:
-		if(gameScene->IsFinished()) {
-			// シーン変更
-			scene = Scene::kClear;
-			// 旧シーンの解放
-			delete gameScene;
-			gameScene = nullptr;
-			// 新シーンの生成と初期化
-			clearScene = new ClearScene;
-			clearScene->Initialize();
-		}
-		break;
-	case Scene::kClear:
-		if (clearScene->IsFinished()) {
-			// シーン変更
-			scene = Scene::kTitle;
-			// 旧シーンの解放
-			delete clearScene;
-			clearScene = nullptr;
-			// 新シーンの生成と初期化
-			titleScene = new TitleScene;
-			titleScene->Initialize();
-		}
+	if (changeTime > 0) {
+		changeTime--;
+	} else {
+		switch (scene) {
+		case Scene::kTitle:
+			if (titleScene->IsFinished()) {
+				if (!transition->isTransition_) {
+					transition->Play();
+				}
 
+				if (transition->transition_[1].sizeTime >= 0.5f) {
+					// シーン変更
+					scene = Scene::kGame;
+					// 旧シーンの解放
+					delete titleScene;
+					titleScene = nullptr;
+					// 新シーンの生成と初期化
+					gameScene = new GameScene;
+					gameScene->Initialize();
+					changeTime = 60;
+				}
+			}
+			break;
+		case Scene::kGame:
+			if (gameScene->IsFinished()) {
+				if (!transition->isTransition_) {
+					transition->Play();
+				}
+
+				if (transition->transition_[1].sizeTime >= 0.5f) {
+					// シーン変更
+					scene = Scene::kClear;
+					// 旧シーンの解放
+					delete gameScene;
+					gameScene = nullptr;
+					// 新シーンの生成と初期化
+					clearScene = new ClearScene;
+					clearScene->Initialize();
+					changeTime = 60;
+				}
+			}
+			break;
+		case Scene::kClear:
+			if (clearScene->IsFinished()) {
+				if (!transition->isTransition_) {
+					transition->Play();
+				}
+
+				if (transition->transition_[1].sizeTime >= 0.5f) {
+					// シーン変更
+					scene = Scene::kTitle;
+					// 旧シーンの解放
+					delete clearScene;
+					clearScene = nullptr;
+					// 新シーンの生成と初期化
+					titleScene = new TitleScene;
+					titleScene->Initialize();
+					changeTime = 60;
+				}
+			}
+		}
 	}
 
 }
@@ -109,20 +137,29 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// ImGuiManagerインスタンスの取得
 	ImGuiManager* imguiManager = ImGuiManager::GetInstance();
 
-	// タイトルシーンのインスタンス生成
+	// タイトルシーン
 	titleScene = new TitleScene();
-	// ゲームシーン初期化
 	titleScene->Initialize();
-
-	// ゲームシーンのインスタンス生成
+	// ゲームシーン
 	gameScene = new GameScene();
-	// ゲームシーン初期化
 	gameScene->Initialize();
-
-	// クリアシーンのインスタンス生成
+	// クリアシーン
 	clearScene = new ClearScene();
-	// クリアシーン初期化
 	clearScene->Initialize();
+	// トランジション
+	transition = new Transition();
+	transition->Initialize();
+
+
+	// BGM
+	// サウンドデータの読み込み
+	uint32_t bgmData_ = Audio::GetInstance()->LoadWave("bgm/title.wav");
+	// BGM音量設定
+	float bgmVolume_ = 0.3f;
+	// BGM再生
+	uint32_t bgmHandle_;
+	bgmHandle_ = Audio::GetInstance()->PlayWave(bgmData_, true, bgmVolume_);
+
 
 	// メインループ
 	while (true) {
@@ -135,9 +172,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		imguiManager->Begin();
 
 		// シーン切り替え
-		ChageScene();
+		ChangeScene();
 		// 現在シーン更新
 		UpdateScene();
+	
+		// トランジション
+		transition->Update();
 
 		// ImGui受付終了
 		imguiManager->End();
@@ -148,6 +188,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		// 現在シーンの描画
 		DrawScene();
 
+		// トランジション
+		transition->Draw();
+
 		// ImGuiの描画
 		imguiManager->Draw();
 
@@ -157,18 +200,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	// タイトルシーンの解放
 	delete titleScene;
-	// nullptrの代入
 	titleScene = nullptr;
 
 	// ゲームシーンの解放
 	delete gameScene;
-	// nullptrの代入
 	gameScene = nullptr;
 
 	// クリアシーンの解放
 	delete clearScene;
-	// nullptrの代入
 	clearScene = nullptr;
+
+	// トランジションの解放
+	delete transition;
+	transition = nullptr;
 
 	// エンジンの終了処理
 	KamataEngine::Finalize();

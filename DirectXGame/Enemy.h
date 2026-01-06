@@ -5,6 +5,7 @@
 
 class GameScene;
 class Player;
+class Atk;
 
 class Enemy {
 public:
@@ -18,6 +19,8 @@ public:
 
 	// デスフラグ
 	bool isDead_ = false;
+	// 振るまい
+	Behavior behavior_ = Behavior::kRoot;
 
 	// 初期化
 	void Initialize(Model* model, Camera* camera, const Vector3& position, GameScene* gameScene);
@@ -31,6 +34,7 @@ public:
 	AABB GetAABB();
 	// 衝突応答
 	void OnCollision(const Player* player);
+	void OnCollision(const Atk* atk);
 	// 通常行動更新
 	void BehaviorRootUpdate();
 	// デス更新
@@ -63,16 +67,19 @@ private:
 	static inline const float kWidth = 0.8f;
 	static inline const float kHeight = 0.8f;
 
-	// 振るまい
-	Behavior behavior_ = Behavior::kRoot;
 	// 次の振るまいリクエスト
 	Behavior behaviorRequest_ = Behavior::kUnknown;
 
 	// デス演出のアニメーションの経過時間
 	float deadTimer_ = 0.0f;
-
 	// 当たり判定無効フラグ
 	bool isCollisionDisabled_ = false;
+
+	// hp
+	uint32_t hp_ = 2;
+	// 無敵
+	bool isInvincible;
+	int invincibleTime;
 
 	// ゲームシーン
 	GameScene* gameScene_ = nullptr;

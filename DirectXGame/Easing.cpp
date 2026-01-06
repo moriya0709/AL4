@@ -12,6 +12,8 @@ void Easing::Initialize() {
 	LoadEasing("Easing/select.csv", 2);
 	// タイトル
 	LoadEasing("Easing/title.csv", 3);
+	// トランジション
+	LoadEasing("Easing/transition.csv", 4);
 }
 
 void Easing::Update() {
@@ -22,6 +24,7 @@ void Easing::Update() {
 	// ImGui
 
 	// ベジェ曲線の制御点
+#ifdef _DEBUG
 	ImGui::SliderFloat("[0].x", &kControlPoints[0].x, -500.0f, 500.0f);
 	ImGui::SliderFloat("[0].y", &kControlPoints[0].y, -500.0f, 500.0f);
 	ImGui::SliderFloat("[1].x", &kControlPoints[1].x, -500.0f, 500.0f);
@@ -124,11 +127,13 @@ void Easing::Update() {
 			kControlPoints[i].y += delta.y;
 		}
 	}
+#endif
 
 #pragma endregion
 }
 
 void Easing::Draw() {
+#ifdef _DEBUG
 	// 三次ベジェ曲線の描画
 	draw_list->AddBezierCubic(
 	    controlPosA, controlPosB, controlPosC, controlPosD, // 制御点
@@ -141,12 +146,12 @@ void Easing::Draw() {
 	draw_list->AddCircleFilled(controlPosB, 4.0f, IM_COL32(0, 255, 0, 255));
 	draw_list->AddCircleFilled(controlPosC, 4.0f, IM_COL32(0, 255, 0, 255));
 	draw_list->AddCircleFilled(controlPosD, 4.0f, IM_COL32(255, 255, 255, 255));
+#endif
 
 	//* UI *//
-
 }
 
-void Easing::Move(UiSet& ui, float timeSpeed, int num) {
+void Easing::Move(EasingSet& ui, float timeSpeed, int num) {
 	// イージング処理
 
 	ui.moveTime += timeSpeed;
@@ -160,7 +165,21 @@ void Easing::Move(UiSet& ui, float timeSpeed, int num) {
 	ui.worldTransform.translation_ = LerpV(ui.startPos, ui.endPos, ui.moveEasedT);
 }
 
-void Easing::Size(UiSet& ui, float timeSpeed, int num) {
+void Easing::MoveV2(EasingSet& ui, float timeSpeed, int num) {
+	// イージング処理
+
+	ui.moveTime += timeSpeed;
+
+	if (ui.moveTime > 1.0f) {
+		ui.moveTime = 1.0f;
+	}
+
+	ui.moveEasedT = BezierEasing(ui.moveTime, easeP[num][0], easeP[num][1], easeP[num][2], easeP[num][3]);
+
+	ui.pos = Lerp(ui.startPosV2, ui.endPosV2, ui.moveEasedT);
+}
+
+void Easing::Size(EasingSet& ui, float timeSpeed, int num) {
 	// イージング処理
 
 	ui.sizeTime += timeSpeed;
@@ -174,7 +193,21 @@ void Easing::Size(UiSet& ui, float timeSpeed, int num) {
 	ui.worldTransform.scale_ = LerpV(ui.startSize, ui.endSize, ui.sizeEasedT);
 }
 
-void Easing::Rotation(UiSet& ui, float timeSpeed, int num) {
+void Easing::SizeV2(EasingSet& ui, float timeSpeed, int num) {
+	// イージング処理
+
+	ui.sizeTime += timeSpeed;
+
+	if (ui.sizeTime > 1.0f) {
+		ui.sizeTime = 1.0f;
+	}
+
+	ui.sizeEasedT = BezierEasing(ui.sizeTime, easeP[num][0], easeP[num][1], easeP[num][2], easeP[num][3]);
+
+	ui.size = Lerp(ui.startSizeV2, ui.endSizeV2, ui.sizeEasedT);
+}
+
+void Easing::Rotation(EasingSet& ui, float timeSpeed, int num) {
 	// イージング処理
 
 	ui.rotationTime += timeSpeed;

@@ -1,13 +1,13 @@
 #define NOMINMAX
 
-#include "Player.h"
-#include "MapChipField.h"
-#include "Math.h"
 #include "assert.h"
 #include <algorithm>
 #include <cassert>
 #include <numbers>
 
+#include "Player.h"
+#include "MapChipField.h"
+#include "Math.h"
 
 void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	// NULLポインタチェック
@@ -31,6 +31,14 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 
 	// ジャンプカウント
 	jumpCount = 0;
+
+	// 手モデルの生成
+	handModel_ = Model::CreateFromOBJ("player_hand");
+	hand_.worldTransform.Initialize();
+
+	// イージング
+	easing_ = new Easing();
+	easing_->Initialize();
 }
 
 void Player::Update() {
@@ -73,16 +81,8 @@ void Player::Update() {
 void Player::Draw() {
 	// 3Dモデル描画
 	modelPlayer_->Draw(worldTransform_, *camera_);
-	if (behavior_ == Behavior::kAttack) {
-		switch (attackPhase_) {
-		case AttackPhase::kAnticipation:
-		default:
-			// 予備動作中は攻撃モデルを描画しない
-			break;
-		case AttackPhase::kAction:
-		case AttackPhase::kRecovery:
-			break;
-		}
+	if (isAttack_) {
+		handModel_->Draw(hand_.worldTransform, *camera_);
 	}
 }
 
@@ -132,7 +132,7 @@ void Player::InputMove() {
 		}
 	    
 	if (onGround_) {
-		if (Input::GetInstance()->TriggerKey(DIK_W) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
 			// ジャンプ初速
 			velocity_ += Vector3(0, kJumpAcceleration / 60.0f, 0);
 		}
@@ -142,7 +142,7 @@ void Player::InputMove() {
 		velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
 
 		if (jumpCount == 1) {
-			if (Input::GetInstance()->TriggerKey(DIK_W) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+			if (Input::GetInstance()->TriggerKey(DIK_SPACE) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
 				// ジャンプ初速
 				velocity_.y = 0.0f;
 				velocity_ += Vector3(0, kJumpAcceleration / 60.0f, 0);
@@ -512,7 +512,6 @@ void Player::BehaviorRootUpdate() {
 	
 	// 現在のジョイスティックを取得
 	Input::GetInstance()->GetJoystickState(0, state);
-
 	// 前回のジョイスティックを取得
 	Input::GetInstance()->GetJoystickStatePrevious(0, preState);
 
@@ -555,10 +554,18 @@ void Player::BehaviorRootUpdate() {
 	}
 
 	// 攻撃キーを押したら
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+	if (Input::GetInstance()->IsTriggerMouse(0)) {
 		// 攻撃ビヘイビアをリクエスト
 		behaviorRequest_ = Behavior::kAttack;
+		// 攻撃の種類
+		if (onGround_) {
+			attackTypes_ = Normal;
+		} else {
+			attackTypes_ = Air;
+		}
 		isAttack_ = true;
+		// 攻撃行動初期化
+		AttackInitialize();
 	}
 
 	// 落下判定
@@ -573,8 +580,6 @@ void Player::BehaviorAttackInitialize() {
 	// 02_14 19枚目 カウンター初期化
 	attackParameter_ = 0;
 
-	velocity_ = {};
-
 	// 溜めフェーズから始める
 	attackPhase_ = AttackPhase::kAnticipation;
 }
@@ -582,18 +587,28 @@ void Player::BehaviorAttackInitialize() {
 // 攻撃行動更新
 void Player::BehaviorAttackUpdate()
 {
-	const Vector3 attackVelocity = {0.8f, 0.0f, 0.0f};
+	
+	// 移動
+	if (attackTypes_ == Air) {
+		InputMove();
+	} else {
+		velocity_ = {};
+	}
 
-	// 攻撃動作用の速度
-	Vector3 velocity{};
+	// 攻撃動作(手)
+	if (attackTypes_ == Normal) {
+		easing_->Move(hand_, 0.05f, 0);
+	} else if (attackTypes_ == Air) {
+		easing_->Rotation(hand_, 0.01f, 0);
+		hand_.worldTransform.translation_ = worldTransform_.translation_;
+	}
 
 	// 予備動作
 	attackParameter_++;
-
+	
 	switch (attackPhase_) {
 	case AttackPhase::kAnticipation: // 溜め動作
 	default: {
-		velocity = {};
 		float t = static_cast<float>(attackParameter_) / kAnticipationTime;
 		worldTransform_.scale_.z = EaseOut(1.0f, 0.3f, t);
 		worldTransform_.scale_.y = EaseOut(1.0f, 1.6f, t);
@@ -606,10 +621,18 @@ void Player::BehaviorAttackUpdate()
 		break;
 	}
 	case AttackPhase::kAction: { // 突進動作
-		
 		float t = static_cast<float>(attackParameter_) / kActionTime;
 		worldTransform_.scale_.z = EaseOut(0.3f, 1.3f, t);
 		worldTransform_.scale_.y = EaseIn(1.6f, 0.7f, t);
+
+		// 移動
+		if (onGround_) {
+			if (lrDirection_ == LRDirection::kRight) {
+				velocity_.x = 0.1f;
+			} else {
+				velocity_.x = -0.1f;
+			}
+		}
 
 		// 余韻動作へ移行
 		if (attackParameter_ >= kActionTime) {
@@ -618,7 +641,6 @@ void Player::BehaviorAttackUpdate()
 		}
 	} break;
 	case AttackPhase::kRecovery: { // 余韻動作
-		velocity = {};
 		float t = static_cast<float>(attackParameter_) / kRecoveryTime;
 		worldTransform_.scale_.z = EaseOut(1.3f, 1.0f, t);
 		worldTransform_.scale_.y = EaseOut(0.7f, 1.0f, t);
@@ -631,30 +653,64 @@ void Player::BehaviorAttackUpdate()
 		break;
 	}
 	}
-
+	
 	// 衝突情報を初期化
 	CollisionMapInfo collisionMapInfo = {};
-	collisionMapInfo.move = velocity;
+	collisionMapInfo.move = velocity_;
 	collisionMapInfo.landing = false;
 	collisionMapInfo.hitWall = false;
-
+	
 	// マップ衝突チェック
 	CheckMapCollision(collisionMapInfo);
-
+	
 	// 移動
 	worldTransform_.translation_ += collisionMapInfo.move;
-
+	
 	if (turnTimer_ > 0.0f) {
 		// タイマーを進める
 		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
-
+	
 		float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
-
+	
 		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
-
+	
 		worldTransform_.rotation_.y = EaseInOut(destinationRotationY, turnFirstRotationY_, turnTimer_ / kTimeTurn);
 	}
-
+	
 	worldTransformAttack_.translation_ = worldTransform_.translation_;
 	worldTransformAttack_.rotation_ = worldTransform_.rotation_;
+
+	WorldTransformUpdate(hand_.worldTransform);
+}
+
+// 攻撃動作初期化
+void Player::AttackInitialize() {
+	if (attackTypes_ == Normal) {
+		hand_.worldTransform.Initialize();
+		hand_.worldTransform.translation_ = {worldTransform_.translation_ + Vector3(0.0f, 1.0f, 0.0f)};
+		hand_.worldTransform.scale_ = {1.0f, 1.0f, 1.0f};
+		hand_.startPos = hand_.worldTransform.translation_;
+		hand_.moveTime = 0.0f;
+		hand_.moveEasedT = 0.0f;
+
+		if (lrDirection_ == LRDirection::kRight) {
+			hand_.worldTransform.rotation_ = {worldTransform_.rotation_ + Vector3(1.0f, 0.0f, 0.0f)};
+			hand_.endPos = hand_.worldTransform.translation_ + Vector3(2.0f, -1.0f, 0.0f);
+			
+		} else if (lrDirection_ == LRDirection::kLeft) {
+			hand_.worldTransform.rotation_ = {worldTransform_.rotation_ + Vector3(7.0f, 0.0f, 0.0f)};
+			hand_.endPos = hand_.worldTransform.translation_ + Vector3(-2.0f, -1.0f, 0.0f);
+			
+		}
+
+	} else if (attackTypes_ == Air) {
+		hand_.worldTransform.Initialize();
+		hand_.worldTransform.translation_ = {worldTransform_.translation_};
+		hand_.worldTransform.rotation_ = {0.0f, 0.0f, 0.0f};
+		hand_.worldTransform.scale_ = {2.0f, 2.0f, 2.0f};
+		hand_.startRotation = hand_.worldTransform.rotation_;
+		hand_.endRotation = hand_.worldTransform.rotation_ + Vector3(0.0f, 0.0f, 21.0f);
+		hand_.rotationTime = 0.0f;
+		hand_.rotationEasedT = 0.0f;
+	}
 }

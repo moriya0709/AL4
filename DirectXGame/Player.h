@@ -1,6 +1,7 @@
 #pragma once
 #include "KamataEngine.h"
 #include "Math.h"
+#include "Easing.h"
 
 using namespace KamataEngine;
 
@@ -11,7 +12,7 @@ class MoveBlock;
 
 class Player {
 public:
-	// 左右
+	// 左右(キャラクター)
 	enum class LRDirection {
 		kRight,
 		kLeft,
@@ -42,11 +43,18 @@ public:
 		kRecovery,     // 余韻動作
 	};
 
+	// 攻撃の種類
+	enum AttackTypes {
+		Normal,
+		Air
+	};
+
 	// 顔の向き
 	LRDirection lrDirection_ = LRDirection::kRight;
-
 	// 振るまい
 	Behavior behavior_ = Behavior::kRoot;
+	// 攻撃の種類
+	AttackTypes attackTypes_ = Normal;
 
 	// デスフラグ
 	bool isDead_ = false;
@@ -74,6 +82,7 @@ public:
 	// デスフラグのgetter
 	bool IsDead() const { return isDead_; }
 	bool IsAttack() const { return isAttack_; }
+	bool OnGround() const { return onGround_; }
 	// 通常行動更新
 	void BehaviorRootUpdate();
 	// 攻撃行動更新
@@ -90,6 +99,7 @@ private:
 	// モデル
 	Model* modelPlayer_ = nullptr;
 	Model* modelAttack_ = nullptr;
+	Model* handModel_ = nullptr;
 	// カメラ
 	Camera* camera_ = nullptr;
 	// 速度
@@ -151,6 +161,11 @@ private:
 	// 二段ジャンプ
 	uint32_t jumpCount;
 
+	// 手
+	EasingSet hand_;
+
+	// イージング
+	Easing* easing_ = nullptr;
 
 	// マップとの当たり判定情報
 	struct CollisionMapInfo {
@@ -174,4 +189,7 @@ private:
 	void UpdateOnGround(const CollisionMapInfo& info);
 	// 壁接触している場合の処理
 	void UpdateOnWall(const CollisionMapInfo& info);
+
+	// 攻撃動作初期化
+	void AttackInitialize();
 };
