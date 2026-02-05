@@ -107,7 +107,7 @@ private:
 	bool isCollisionDisabled_ = false;
 
 	// hp
-	uint32_t hp_ = 20;
+	uint32_t hp_ = 3;
 	// 無敵
 	bool isInvincible;
 	int invincibleTime;

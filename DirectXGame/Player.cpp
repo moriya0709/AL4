@@ -517,9 +517,9 @@ void Player::UpdateOnWall(const CollisionMapInfo& info) {
 		// 壁ジャンプ
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
 			if (lrDirection_ == LRDirection::kRight) {
-				finalVelocity.x -= 1.0f;
+				velocity_.x -= 0.5f;
 			} else if (lrDirection_ == LRDirection::kLeft) {
-				finalVelocity.x += 1.0f;
+				velocity_.x += 0.5f;
 			}
 		}
 	}
