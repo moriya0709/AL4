@@ -3,7 +3,7 @@
 
 using namespace KamataEngine;
 
-void GameScene::Initialize() {
+void GameScene::Initialize(int selectStage) {
 
 	// 自キャラの生成
 	player_ = new Player();
@@ -14,6 +14,10 @@ void GameScene::Initialize() {
 	skydomeModel_ = Model::CreateFromOBJ("skydome", true);
 	enemyModel_ = Model::CreateFromOBJ("enemy");
 	deathParticlesModel_ = Model::CreateFromOBJ("deathParticle");
+
+	// テクスチャの生成
+	hitEnemyTex_ = TextureManager::Load("enemy/hitEnemy.png");
+
 	// ワールドトランスフォームの初期化
 	worldTransform_.Initialize();
 	// カメラの初期化
@@ -30,7 +34,14 @@ void GameScene::Initialize() {
 
 	// マップチップの初期化
 	mapChipField_ = new MapChipField;
-	mapChipField_->LoadMapChipCsv("Resources/blocks.csv");
+
+	if (selectStage == 1) {
+		mapChipField_->LoadMapChipCsv("Resources/map/map1.csv");
+	}
+	if (selectStage == 2) {
+		mapChipField_->LoadMapChipCsv("Resources/map/map2.csv");
+	}
+
 	GenerateBlocks();
 	// 座標をマップチップ番号で指定
 	Vector3 playerPosition = mapChipField_->GetMapChipPositionByIndex(3, 17);
@@ -49,11 +60,26 @@ void GameScene::Initialize() {
 	CameraController::Rect cameraArea = {5.0f, 100 - 5.0f, 4.0f, 4.0f};
 	cameraController_->SetMovableArea(cameraArea);
 
+	// 敵配置
+	if (selectStage == 1) {
+		enemyPositions = {
+		    mapChipField_->GetMapChipPositionByIndex(10, 17),
+		    mapChipField_->GetMapChipPositionByIndex(33, 13),
+		    mapChipField_->GetMapChipPositionByIndex(44, 17),
+		    mapChipField_->GetMapChipPositionByIndex(80, 14),
+		};
+	} else if (selectStage == 2) {
+		enemyPositions = {
+		    mapChipField_->GetMapChipPositionByIndex(26, 11),
+		};
+	}
+
 	// 敵の初期化
-	for (int32_t i = 0; i < 5; ++i) {
+	for (const auto& pos : enemyPositions) {
 		Enemy* newEnemy = new Enemy();
-		Vector3 enemyPosition = mapChipField_->GetMapChipPositionByIndex(i * 10, 18);
-		newEnemy->Initialize(enemyModel_, &camera_, enemyPosition, this);
+		newEnemy->Initialize(enemyModel_,hitEnemyTex_, &camera_,player_, pos);
+		// マップチップフィールドの生成と初期化
+		newEnemy->SetMapChipField(mapChipField_);
 
 		enemyes_.push_back(newEnemy);
 	}
@@ -72,7 +98,7 @@ void GameScene::Initialize() {
 
 	// 動くブロックの初期化
 	moveBlockModel_ = Model::CreateFromOBJ("move_block");
-	for (int32_t i = 0; i < 1; ++i) {
+	for (int32_t i = 0; i < 0; ++i) {
 		MoveBlock* newMoveBlock = new MoveBlock();
 		Vector3 moveBlockPosition = mapChipField_->GetMapChipPositionByIndex(40, 16);
 		newMoveBlock->Initialize(moveBlockModel_, &camera_, moveBlockPosition);
@@ -168,9 +194,9 @@ void GameScene::Update() {
 	}
 
 	// 発射処理
-	//if (Input::GetInstance()->TriggerKey(DIK_SPACE) && bulletCoolTime_ <= 0) {
-	//	isBullet_ = true;
-	//}
+	if (Input::GetInstance()->TriggerKey(DIK_J) && bulletCoolTime_ <= 0) {
+		isBullet_ = true;
+	}
 
 	if (isBullet_) {
 		// 予備動作時間

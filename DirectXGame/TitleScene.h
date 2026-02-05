@@ -3,6 +3,7 @@
 #include "Player.h"
 #include "Fade.h"
 #include "Title.h"
+#include "Easing.h"
 
 class TitleScene {
 public:
@@ -13,6 +14,9 @@ public:
 		kMain,    // メイン部
 		kFadeOut, // フェードアウト
 	};
+
+	// 選択中のステージ
+	int selectStage = 1;
 
 	// 初期化
 	void Initialize();
@@ -38,6 +42,16 @@ private:
 	// 終了フラグ
 	bool finished_ = false;
 
+	// ステージセレクト
+	bool isSelect = false;
+	EasingSet selectUi[2];
+	Model* selectUiModel_[2] = {nullptr};
+	int kSelect = 2;
+	uint32_t selectUiTex[2];
+
+	// イージング
+	Easing* easing_ = nullptr;
+	// フェード
 	Fade* fade_ = nullptr;
 	// 現在のフェーズ
 	Phase phase_ = Phase::kFadeIn;

@@ -20,7 +20,7 @@ class GameScene {
 public:
 
 	// 初期化
-	void Initialize();
+	void Initialize(int selectStage);
 	// 更新
 	void Update();
 	// 描画
@@ -62,6 +62,10 @@ private:
 	Model* moveBlockModel_ = nullptr;
 	Model* goalModel_ = nullptr;
 	Model* backGroundModel_ = nullptr;
+
+	// テクスチャ
+	uint32_t hitEnemyTex_;
+
 	// ワールドトランスフォーム
 	WorldTransform worldTransform_;
 	// カメラ
@@ -82,6 +86,7 @@ private:
 	CameraController* cameraController_;
 	// 敵
 	std::list<Enemy*> enemyes_;
+	std::vector<Vector3> enemyPositions;
 	// デスパーティクル
 	DeathParticles* deathParticles_ = nullptr;
 	// 終了フラグ

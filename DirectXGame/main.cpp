@@ -44,12 +44,12 @@ void ChangeScene()
 				if (transition->transition_[1].sizeTime >= 0.5f) {
 					// シーン変更
 					scene = Scene::kGame;
+					// 新シーンの生成と初期化
+					gameScene = new GameScene;
+					gameScene->Initialize(titleScene->selectStage);
 					// 旧シーンの解放
 					delete titleScene;
 					titleScene = nullptr;
-					// 新シーンの生成と初期化
-					gameScene = new GameScene;
-					gameScene->Initialize();
 					changeTime = 60;
 				}
 			}
@@ -129,7 +129,7 @@ void DrawScene() {
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// エンジンの初期化
-	KamataEngine::Initialize(L"LE2C_モリヤ_ユウゴ_大砲君");
+	KamataEngine::Initialize(L"LE2D_22_モリヤ_ユウゴ_大砲君");
 
 	// DirectXCommonインスタンスの取得
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
@@ -142,7 +142,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	titleScene->Initialize();
 	// ゲームシーン
 	gameScene = new GameScene();
-	gameScene->Initialize();
+	gameScene->Initialize(titleScene->selectStage);
 	// クリアシーン
 	clearScene = new ClearScene();
 	clearScene->Initialize();

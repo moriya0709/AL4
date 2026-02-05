@@ -21,6 +21,14 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	worldTransform_.translation_ = position;
 	worldTransform_.rotation_.y = std::numbers::pi_v<float> / 2.0f;
 
+	// イージング用
+	player_.worldTransform.Initialize();
+	player_.worldTransform.translation_ = position;
+	player_.worldTransform.rotation_.y = std::numbers::pi_v<float> / 2.0f;
+	player_.startRotation = player_.worldTransform.rotation_;
+	player_.endRotation = player_.worldTransform.rotation_ + Vector3(6.3f,0.0f,0.0f);
+	player_.rotationTime = 1.0f;
+
 	// ワールドトランスフォームの初期化(攻撃)
 	worldTransformAttack_.Initialize();
 	worldTransformAttack_.translation_ = position;
@@ -35,6 +43,9 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	// 手モデルの生成
 	handModel_ = Model::CreateFromOBJ("player_hand");
 	hand_.worldTransform.Initialize();
+
+	// 合計後の速度
+	finalVelocity = {};
 
 	// イージング
 	easing_ = new Easing();
@@ -87,9 +98,6 @@ void Player::Draw() {
 }
 
 void Player::InputMove() {
-
-	
-
 		// 左右移動操作
 		if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A) || state.Gamepad.sThumbLX) {
 
@@ -120,7 +128,7 @@ void Player::InputMove() {
 				}
 			}
 			velocity_ += acceleration;
-			velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
+			//velocity_.x = std::clamp(velocity_.x, -kLimitRunSpeed, kLimitRunSpeed);
 		} else {
 			// 非入力時は移動減衰をかける
 			velocity_.x *= (1.0f - kAttenuation);
@@ -150,6 +158,53 @@ void Player::InputMove() {
 			}
 		}
 	}
+
+	// ローリング
+	rollingCoolTime -= 1.0f / 60.0f;
+	if (invincibility) {
+		if (invincibilityFrame > 0) {
+			invincibilityFrame--;
+		} else {
+			invincibility = false;
+		}
+	}
+
+	if (Input::GetInstance()->TriggerKey(DIK_LSHIFT)) {
+		if (rollingCoolTime <= 0.0f) {
+
+			isRolling_ = true;
+
+			if (lrDirection_ == LRDirection::kRight) {
+				rollVelocityX_ = 0.5f;
+			} else {
+				rollVelocityX_ = -0.5f;
+			}
+
+			invincibilityFrame = 30;
+			invincibility = true;
+			rollingCoolTime = 0.5f;
+
+			// イージング用
+			player_.rotationEasedT = 0.0f;
+			player_.rotationTime = 0.0f;
+		}
+	}
+
+	if (isRolling_) {
+		rollVelocityX_ *= 0.9f; // ← ローリング専用の減衰
+
+		if (std::abs(rollVelocityX_) < 0.01f) {
+			rollVelocityX_ = 0.0f;
+			isRolling_ = false;
+		}
+
+		easing_->Rotation(player_, 0.05f, 0);
+		worldTransform_.rotation_.x = player_.worldTransform.rotation_.x;
+	}
+
+	finalVelocity = velocity_;
+	finalVelocity.x += rollVelocityX_;
+
 }
 
 void Player::CheckMapCollision(CollisionMapInfo& info) {
@@ -270,122 +325,6 @@ void Player::CheckMapCollisionDown(CollisionMapInfo& info) {
 	}
 }
 
-// 設置状態の切り替え処理
-void Player::UpdateOnGround(const CollisionMapInfo& info) {
-
-	info;
-
-	if (onGround_) {
-		// ジャンプ開始
-		if (velocity_.y > 0.0f) {
-			onGround_ = false;
-			jumpCount++;
-		} else {
-			// 落下判定
-			// 落下なら空中状態に切り替え
-
-			// 02_08スライド19枚目(このelseブロック全部)
-			std::array<Vector3, kNumCorner> positionsNew;
-
-			for (uint32_t i = 0; i < positionsNew.size(); ++i) {
-				positionsNew[i] = CornerPosition(worldTransform_.translation_ + info.move, static_cast<Corner>(i));
-			}
-
-			bool hit = false;
-
-			MapChipType mapChipType;
-
-			// 左下点の判定
-			MapChipField::IndexSet indexSet;
-			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom] + Vector3(0, -kGroundSearchHeight, 0));
-			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
-			if (mapChipType == MapChipType::kBlock) {
-				hit = true;
-			}
-
-			// 右下点の判定
-			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom] + Vector3(0, -kGroundSearchHeight, 0));
-			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
-			if (mapChipType == MapChipType::kBlock) {
-				hit = true;
-			}
-
-			// 落下開始
-			if (!hit) {
-				//DebugText::GetInstance()->ConsolePrintf("jump");
-				onGround_ = false;
-				jumpCount++;
-			}
-		}
-	} else {
-		// 02_08スライド16枚目 地面に接触している場合の処理
-		if (info.landing) {
-			// 着地状態に切り替える（落下を止める）
-			onGround_ = true;
-			// 着地時にX速度を減衰
-			velocity_.x *= (1.0f - kAttenuationLanding);
-			// Y速度をゼロに
-			velocity_.y = 0.0f;
-
-			// ジャンプカウントリセット
-			jumpCount = 0;
-		}
-	}
-}
-
-// 壁接地中の処理
-void Player::UpdateOnWall(const CollisionMapInfo& info) {
-
-	if (info.hitWall) {
-		velocity_.x *= (1.0f - kAttenuationWall);
-	}
-}
-
-Vector3 Player::GetWorldPosition() {
-	// ワールド座標を入れる変数
-	Vector3 worldPos;
-	// ワールド行列の平行移動成分を取得（ワールド座標）
-	worldPos = worldTransform_.translation_;
-	
-	return worldPos;
-}
-
-AABB Player::GetAABB() { 
-	Vector3 worldPos = GetWorldPosition();
-
-	AABB aabb;
-
-	aabb.min = {worldPos.x - kWidth / 2.0f, worldPos.y - kHeight / 2.0f, worldPos.z - kWidth / 2.0f};
-	aabb.max = {worldPos.x + kWidth / 2.0f, worldPos.y + kHeight / 2.0f, worldPos.z + kWidth / 2.0f};
-
-
-	return aabb;
-}
-
-void Player::OnCollision(const Enemy* enemy) {
-	// 不使用
-	(void)enemy;
-
-	// 書き換え
-	isDead_ = true;
-}
-
-void Player::OnCollision(const Bullet* bullet) {
-	(void)bullet;
-
-	// プレイヤーが下方向に移動している（落下中）
-	if (velocity_.y < 0.0f) {
-		// ジャンプ初速
-		velocity_ += Vector3(0, kJumpAcceleration / 60.0f, 0);
-	}
-}
-
-void Player::OnCollision(const MoveBlock* moveBlock) {
-	(void)moveBlock;
-	// 書き換え
-	isDead_ = true;
-}
-
 void Player::CheckMapCollisionRight(CollisionMapInfo& info) {
 
 	if (info.move.x <= 0) {
@@ -435,7 +374,6 @@ void Player::CheckMapCollisionRight(CollisionMapInfo& info) {
 			info.move.x = std::max(0.0f, rect.left - worldTransform_.translation_.x - (kWidth / 2.0f + kBlank));
 			info.hitWall = true;
 		}
-
 	}
 }
 
@@ -504,6 +442,136 @@ Vector3 Player::CornerPosition(const Vector3& center, Corner corner) {
 	return center + offsetTable[static_cast<uint32_t>(corner)];
 }
 
+// 設置状態の切り替え処理
+void Player::UpdateOnGround(const CollisionMapInfo& info) {
+
+	info;
+
+	if (onGround_) {
+		// ジャンプ開始
+		if (velocity_.y > 0.0f) {
+			onGround_ = false;
+			jumpCount++;
+		} else {
+			// 落下判定
+			// 落下なら空中状態に切り替え
+
+			// 02_08スライド19枚目(このelseブロック全部)
+			std::array<Vector3, kNumCorner> positionsNew;
+
+			for (uint32_t i = 0; i < positionsNew.size(); ++i) {
+				positionsNew[i] = CornerPosition(worldTransform_.translation_ + info.move, static_cast<Corner>(i));
+			}
+
+			bool hit = false;
+
+			MapChipType mapChipType;
+
+			// 左下点の判定
+			MapChipField::IndexSet indexSet;
+			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom] + Vector3(0, -kGroundSearchHeight, 0));
+			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+			if (mapChipType == MapChipType::kBlock) {
+				hit = true;
+			}
+
+			// 右下点の判定
+			indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom] + Vector3(0, -kGroundSearchHeight, 0));
+			mapChipType = mapChipField_->GetMapChipTypeByIndex(indexSet.xIndex, indexSet.yIndex);
+			if (mapChipType == MapChipType::kBlock) {
+				hit = true;
+			}
+
+			// 落下開始
+			if (!hit) {
+				//DebugText::GetInstance()->ConsolePrintf("jump");
+				onGround_ = false;
+				jumpCount++;
+			}
+		}
+	} else {
+		// 02_08スライド16枚目 地面に接触している場合の処理
+		if (info.landing) {
+			// 着地状態に切り替える（落下を止める）
+			onGround_ = true;
+			// 着地時にX速度を減衰
+			velocity_.x *= (1.0f - kAttenuationLanding);
+			// Y速度をゼロに
+			velocity_.y = 0.0f;
+
+			// ジャンプカウントリセット
+			jumpCount = 0;
+		}
+	}
+}
+
+// 壁接地中の処理
+void Player::UpdateOnWall(const CollisionMapInfo& info) {
+
+	if (info.hitWall) {
+		finalVelocity.x *= (1.0f - kAttenuationWall);
+
+		onGround_ = true;
+		jumpCount = 0;
+
+		// 壁ジャンプ
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE) || (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && !(preState.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+			if (lrDirection_ == LRDirection::kRight) {
+				finalVelocity.x -= 1.0f;
+			} else if (lrDirection_ == LRDirection::kLeft) {
+				finalVelocity.x += 1.0f;
+			}
+		}
+	}
+}
+
+Vector3 Player::GetWorldPosition() {
+	// ワールド座標を入れる変数
+	Vector3 worldPos;
+	// ワールド行列の平行移動成分を取得（ワールド座標）
+	worldPos = worldTransform_.translation_;
+	
+	return worldPos;
+}
+
+AABB Player::GetAABB() { 
+	Vector3 worldPos = GetWorldPosition();
+
+	AABB aabb;
+
+	aabb.min = {worldPos.x - kWidth / 2.0f, worldPos.y - kHeight / 2.0f, worldPos.z - kWidth / 2.0f};
+	aabb.max = {worldPos.x + kWidth / 2.0f, worldPos.y + kHeight / 2.0f, worldPos.z + kWidth / 2.0f};
+
+
+	return aabb;
+}
+
+void Player::OnCollision(const Enemy* enemy) {
+	// 不使用
+	(void)enemy;
+
+	// 書き換え
+	if (!invincibility)
+	isDead_ = true;
+}
+
+void Player::OnCollision(const Bullet* bullet) {
+	(void)bullet;
+
+	// プレイヤーが下方向に移動している（落下中）
+	if (velocity_.y < 0.0f) {
+		// ジャンプ初速
+		velocity_ += Vector3(0, kJumpAcceleration / 60.0f, 0);
+	}
+}
+
+void Player::OnCollision(const MoveBlock* moveBlock) {
+	(void)moveBlock;
+	// 書き換え
+	if (!invincibility)
+	isDead_ = true;
+}
+
 // 通常行動初期化
 void Player::BehaviorRootInitialize() {}
 
@@ -520,7 +588,7 @@ void Player::BehaviorRootUpdate() {
 
 	// 衝突情報を初期化
 	CollisionMapInfo collisionMapInfo = {};
-	collisionMapInfo.move = velocity_;
+	collisionMapInfo.move = finalVelocity;
 	collisionMapInfo.landing = false;
 	collisionMapInfo.hitWall = false;
 
@@ -532,7 +600,7 @@ void Player::BehaviorRootUpdate() {
 
 	// 天井接触による落下開始
 	if (collisionMapInfo.ceiling) {
-		velocity_.y = 0;
+		finalVelocity.y = 0;
 	}
 
 	// 壁接触している場合の処理
@@ -592,7 +660,7 @@ void Player::BehaviorAttackUpdate()
 	if (attackTypes_ == Air) {
 		InputMove();
 	} else {
-		velocity_ = {};
+		finalVelocity = {};
 	}
 
 	// 攻撃動作(手)
@@ -628,9 +696,9 @@ void Player::BehaviorAttackUpdate()
 		// 移動
 		if (onGround_) {
 			if (lrDirection_ == LRDirection::kRight) {
-				velocity_.x = 0.1f;
+				finalVelocity.x = 0.1f;
 			} else {
-				velocity_.x = -0.1f;
+				finalVelocity.x = -0.1f;
 			}
 		}
 
@@ -656,7 +724,7 @@ void Player::BehaviorAttackUpdate()
 	
 	// 衝突情報を初期化
 	CollisionMapInfo collisionMapInfo = {};
-	collisionMapInfo.move = velocity_;
+	collisionMapInfo.move = finalVelocity;
 	collisionMapInfo.landing = false;
 	collisionMapInfo.hitWall = false;
 	

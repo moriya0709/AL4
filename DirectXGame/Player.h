@@ -123,7 +123,7 @@ private:
 	// 最大落下速度（下方向）
 	static inline const float kLimitFallSpeed = 0.5f;
 	// ジャンプ初速（上方向）
-	static inline const float kJumpAcceleration = 20.0f;
+	static inline const float kJumpAcceleration = 15.0f;
 	// マップチップによるフィールド
 	MapChipField* mapChipField_ = nullptr;
 	// キャラクターの当たり判定サイズ
@@ -132,7 +132,7 @@ private:
 	static inline const float kBlank = 0.04f;
 	// 着地時の速度減衰率
 	static inline const float kAttenuationLanding = 0.0f;
-	// 微笑な数値
+	// 微小な数値
 	static inline const float kGroundSearchHeight = 0.06f;
 	// 着地時の速度減衰率
 	static inline const float kAttenuationWall = 0.2f;
@@ -163,6 +163,19 @@ private:
 
 	// 手
 	EasingSet hand_;
+
+	// 無敵時間
+	int invincibilityFrame = 0;
+	bool invincibility = false;
+	float rollingCoolTime = 0.0f;
+	float rollVelocityX_ = 0.0f;
+	bool isRolling_ = false;
+
+	// 自機
+	EasingSet player_;
+
+	// 合計後の速度
+	Vector3 finalVelocity;
 
 	// イージング
 	Easing* easing_ = nullptr;
