@@ -98,7 +98,7 @@ void GameScene::Initialize(int selectStage) {
 
 	// 動くブロックの初期化
 	moveBlockModel_ = Model::CreateFromOBJ("move_block");
-	for (int32_t i = 0; i < 0; ++i) {
+	for (int32_t i = 0; i < 1; ++i) {
 		MoveBlock* newMoveBlock = new MoveBlock();
 		Vector3 moveBlockPosition = mapChipField_->GetMapChipPositionByIndex(40, 16);
 		newMoveBlock->Initialize(moveBlockModel_, &camera_, moveBlockPosition);
@@ -194,7 +194,7 @@ void GameScene::Update() {
 	}
 
 	// 発射処理
-	if (Input::GetInstance()->TriggerKey(DIK_J) && bulletCoolTime_ <= 0) {
+	if (Input::GetInstance()->IsTriggerMouse(1) && bulletCoolTime_ <= 0) {
 		isBullet_ = true;
 	}
 
@@ -320,7 +320,7 @@ void GameScene::Draw() {
 
 	// 背景
 	skydome_->Draw();
-	backGround_->Draw();
+	//wbackGround_->Draw();
 
 	if (deathParticles_) {
 		// デスパーティクルの更新
